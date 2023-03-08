@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name">ScanToPrintApp</string>
+
+    <string name="wait">しばらくお待ちください.</string>
+    <string name = "msg_OpenPorterror">Open Port Error</string>
+    <string name="connectionProcess">接続処理中</string>
+    <string name="msg_success">Success</string>
+    <string name="msg_RetryError">RetryError</string>
+    <string name="runPrint">印刷実行中</string>
+    <string name="endPrint">印刷終了</string>
+    <string name="error">エラー</string>
+    <string name="processComplete">処理完了</string>
+    <string name="msg_Ok">はい</string>
+    <string name="msg_No">いいえ</string>
+    <string name="statusReception"> OnStatus受信</string>
+
+    <string name = "msg_executePrintError">Execute Print Error</string>
+
+    <string name="hinbanData">品番データ</string>
+    <string name="hinmeiData">品名データ</string>
+    <string name="siiresakiData">仕入先データ</string>
+    <string name="qrcodeData">QRCODE</string>
+
+
+</resources>
