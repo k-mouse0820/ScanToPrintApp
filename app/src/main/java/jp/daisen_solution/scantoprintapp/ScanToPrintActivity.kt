@@ -48,9 +48,8 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
         result?.let {
             if (result.text != null && !result.text.equals(lastText)) {
                 // 重複スキャンはしない
-                lastText = result.text
-                bindingScanner.messageText.text = result.text
-                binding.barcodeView.setStatusText(result.text)
+                lastText = it.text
+                binding.messageText.text = it.text
                 beepManager.playBeepSoundAndVibrate()
                 animateBackground()
             }
@@ -83,7 +82,7 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
         beepManager = BeepManager(this)
         beepManager.isVibrateEnabled = true
 
-        messageTextBG = bindingScanner.messageText.background
+        messageTextBG = binding.messageText.background
 
         // フラッシュのON/OFFをするListenerの設定
         bindingScanner.flashSwitch.setOnCheckedChangeListener { _, isChecked ->
@@ -172,7 +171,7 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
         /////////////////////////////////////////////////////////////////////////////////////
         // ４．印刷ボタン押下時の処理
         /////////////////////////////////////////////////////////////////////////////////////
-        bindingScanner.printButton.setOnClickListener {
+        binding.printButton.setOnClickListener {
 
             mPrintData = PrintData()
             val result = LongRef(0)
@@ -182,7 +181,7 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
             val printItemList = HashMap<String?, String?>()
 
             // 品番データ（8桁）
-            val hinban = bindingScanner.messageText.text.toString()
+            val hinban = binding.messageText.text.toString()
             if (hinban.length > 8) {
                 printItemList[getString(R.string.hinbanData)] = hinban.substring(0,7)
             } else {
@@ -206,7 +205,7 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
             }
 
             // QRCODE
-            val qrcode = bindingScanner.messageText.text.toString()
+            val qrcode = binding.messageText.text.toString()
             printItemList[getString(R.string.qrcodeData)] = qrcode
 
             // 印刷データをセット
@@ -251,17 +250,17 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
             if (!mBcpControl!!.GetMessage(result.longValue, message)) {
                 mProgressDlg!!.setMessage(this.getString(R.string.msg_OpenPorterror))
                 Log.e("openPort",getString(R.string.msg_OpenPorterror))
-                bindingScanner.printButton.isEnabled = false
+                binding.printButton.isEnabled = false
                 return
             } else {
                 mProgressDlg!!.setMessage(message.getStringValue())
                 Log.e("openPort", message.getStringValue())
-                bindingScanner.printButton.isEnabled = false
+                binding.printButton.isEnabled = false
                 return
             }
         } else {
             mProgressDlg!!.setMessage(this.getString(R.string.msg_success))
-            bindingScanner.printButton.isEnabled = true
+            binding.printButton.isEnabled = true
             this.getSharedPreferences(Consts.bcpSectionName, Context.MODE_PRIVATE).edit()
                 .putString(Consts.pairingNameKey, bluetoothDeviceExtra).apply()
             Log.i("openPort","ポートオープン処理：成功")
@@ -361,8 +360,8 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
                 this.showDialog(PrintDialogDelegate.Companion.ERRORMESSAGE_DIALOG)
             }
         }
-        if (bindingScanner.messageText.text.toString() != "" && bindingScanner.messageText.text.toString().length != 0 ) {
-            bindingScanner.printButton.isEnabled = true
+        if (binding.messageText.text.toString() != "" && binding.messageText.text.toString().length != 0 ) {
+            binding.printButton.isEnabled = true
         }
     }
 
@@ -462,7 +461,7 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
             ValueAnimator.ofObject(ArgbEvaluator(), colorFrom, colorTo)
         colorAnimation.duration = 250 // milliseconds
 
-        colorAnimation.addUpdateListener { animator -> bindingScanner.messageText.setBackgroundColor(animator.animatedValue as Int)}
+        colorAnimation.addUpdateListener { animator -> binding.messageText.setBackgroundColor(animator.animatedValue as Int)}
         colorAnimation.start()
     }
 
