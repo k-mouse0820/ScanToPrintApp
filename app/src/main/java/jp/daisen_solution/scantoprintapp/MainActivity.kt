@@ -93,6 +93,7 @@ class MainActivity : AppCompatActivity() {
             }
 
 
+        } catch (th: Throwable) {
         }
     }
 
