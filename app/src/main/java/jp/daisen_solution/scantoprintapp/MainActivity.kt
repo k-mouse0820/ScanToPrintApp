@@ -72,26 +72,12 @@ class MainActivity : AppCompatActivity() {
             binding.bluetoothListView.selector = PaintDrawable(Color.BLUE)
             binding.bluetoothListView.setItemChecked(selectPosition, true)  // デフォルト行を選択
 
-            /*
-            /////////////////////////////////////////////////////////////////////////////////////
-            // リストのアイテム（BluetoothDevice）を選択した時の処理
-            // １．選択したデバイスを記録
-            // ２．スキャン画面へ遷移
-            /////////////////////////////////////////////////////////////////////////////////////
-            val listClickListener = OnItemClickListener { parent, _, position, _ ->
-                val listView = parent as ListView
-                val item = listView.getItemAtPosition(position) as String
-                selectPosition = position
-                binding.bluetoothListView.setItemChecked(selectPosition, true)
-                this.getSharedPreferences(Consts.bcpSectionName, Context.MODE_PRIVATE).edit()
-                    .putString(Consts.pairingNameKey, item).apply()
-            }
-             */
-
             binding.startButton.setOnClickListener {
-                val item = binding.bluetoothListView.selectedItem as String
+                Log.v("startButton", binding.bluetoothListView.getItemAtPosition(selectPosition).toString())
+                val item = binding.bluetoothListView.getItemAtPosition(selectPosition) as String
                 val intent = Intent(this, ScanToPrintActivity::class.java)
                 intent.putExtra(Consts.bluetoothDeviceExtra, item )
+                startActivity(intent)
             }
 
         } catch (th: Throwable) {

@@ -2,6 +2,7 @@ package jp.daisen_solution.scantoprintapp
 
 import android.animation.ValueAnimator
 import android.animation.ArgbEvaluator
+import android.app.Activity
 import android.app.AlertDialog
 import android.app.Dialog
 import android.app.ProgressDialog
@@ -24,6 +25,7 @@ import jp.co.toshibatec.bcp.library.BCPControl
 import jp.co.toshibatec.bcp.library.BCPControl.LIBBcpControlCallBack
 import jp.co.toshibatec.bcp.library.LongRef
 import jp.co.toshibatec.bcp.library.StringRef
+import jp.daisen_solution.scantoprintapp.databinding.ActivityCustomScannerBinding
 import jp.daisen_solution.scantoprintapp.databinding.ActivityScanToPrintBinding
 import jp.daisen_solution.scantoprintapp.databinding.CustomQrCodeScannerBinding
 import kotlinx.coroutines.CoroutineScope
@@ -39,10 +41,21 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
     private lateinit var binding: ActivityScanToPrintBinding
     private lateinit var bindingScanner: CustomQrCodeScannerBinding
 
-    private lateinit var capture: CaptureManager
     private lateinit var messageTextBG: Drawable
     lateinit var beepManager: BeepManager
     private var lastText = ""
+    private var callback = BarcodeCallback { result ->
+        result?.let {
+            if (result.text != null && !result.text.equals(lastText)) {
+                // 重複スキャンはしない
+                lastText = result.text
+                bindingScanner.messageText.text = result.text
+                binding.barcodeView.setStatusText(result.text)
+                beepManager.playBeepSoundAndVibrate()
+                animateBackground()
+            }
+        }
+    }
 
     private var mBcpControl: BCPControl? = null
     private var mConnectionData: ConnectionData? = ConnectionData()
@@ -50,22 +63,15 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
     private var mProgressDlg: ProgressDialog? = null
     private var mPrintDialogDelegate: PrintDialogDelegate? = null
 
-    private var callback = BarcodeCallback { result ->
-        result?.let {
-            if (result.text != null && !result.text.equals(lastText)) {
-                // 重複スキャンはしない
-                lastText = result.text
-                bindingScanner.messageText.text = it.text
-                beepManager.playBeepSoundAndVibrate()
-                animateBackground()
-            }
-        }
-    }
+    private var bluetoothDeviceExtra: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityScanToPrintBinding.inflate(layoutInflater)
+        bindingScanner = CustomQrCodeScannerBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+
 
         /////////////////////////////////////////////////////////////////////////////////////
         // １．スキャナー起動
@@ -137,14 +143,15 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
         mBcpControl!!.usePrinter = 27
 
         // Bluetoothデバイス情報取得(MainActivityで選択したデバイス）
-        val pairedBluetoothDeviceName = this.getSharedPreferences(Consts.bcpSectionName, Context.MODE_PRIVATE).getString(Consts.pairingNameKey, "")
-        val bdAddress = pairedBluetoothDeviceName!!.substring(
-            pairedBluetoothDeviceName!!.indexOf("(") + 1,
-            pairedBluetoothDeviceName!!.indexOf(")")
+        bluetoothDeviceExtra = intent.getStringExtra(Consts.bluetoothDeviceExtra).toString()
+        val bdAddress = bluetoothDeviceExtra!!.substring(
+            bluetoothDeviceExtra!!.indexOf("(") + 1,
+            bluetoothDeviceExtra!!.indexOf(")")
         )
+
         if (bdAddress == null || bdAddress.isEmpty()) {
             util.showAlertDialog(this, this.getString(R.string.bdAddrNotSet) )
-            return
+            confirmationEndDialog(this)
         }
 
         // 通信パラメータの設定
@@ -255,9 +262,8 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
         } else {
             mProgressDlg!!.setMessage(this.getString(R.string.msg_success))
             bindingScanner.printButton.isEnabled = true
-            val item = intent.getStringExtra(Consts.bluetoothDeviceExtra)
             this.getSharedPreferences(Consts.bcpSectionName, Context.MODE_PRIVATE).edit()
-                .putString(Consts.pairingNameKey, item).apply()
+                .putString(Consts.pairingNameKey, bluetoothDeviceExtra).apply()
             Log.i("openPort","ポートオープン処理：成功")
         }
 
@@ -389,26 +395,29 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
     override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
         if (event!!.action == KeyEvent.ACTION_DOWN) {
             if (event!!.keyCode == KeyEvent.KEYCODE_BACK) {
-
-                val alertBuilder = AlertDialog.Builder(this)
-                alertBuilder.setMessage(R.string.confirmBack)
-                alertBuilder.setCancelable(false)
-                alertBuilder.setPositiveButton(R.string.msg_Ok) { _, _ ->
-                    closeBluetoothPort()
-                    mBcpControl = null
-                    mConnectionData = null
-                    mPrintData = null
-                    mPrintDialogDelegate = null
-                    finish()
-                }
-                alertBuilder.setNegativeButton(R.string.msg_No) { _, _ ->
-                    // 何もしない
-                }
-                val alertDialog = alertBuilder.create()
-                alertDialog.show()
+                confirmationEndDialog(this)
+                return true
             }
         }
         return super.dispatchKeyEvent(event)
+    }
+    private fun confirmationEndDialog(activity: Activity) {
+        val alertBuilder = AlertDialog.Builder(this)
+        alertBuilder.setMessage(R.string.confirmBack)
+        alertBuilder.setCancelable(false)
+        alertBuilder.setPositiveButton(R.string.msg_Ok) { _, _ ->
+            closeBluetoothPort()
+            mBcpControl = null
+            mConnectionData = null
+            mPrintData = null
+            mPrintDialogDelegate = null
+            finish()
+        }
+        alertBuilder.setNegativeButton(R.string.msg_No) { _, _ ->
+            // 何もしない
+        }
+        val alertDialog = alertBuilder.create()
+        alertDialog.show()
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -448,7 +457,7 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
     ////////////////////////////////////////////////////////////////////////////////////////////////
     private fun animateBackground() {
         val colorFrom = resources.getColor(R.color.purple_200, theme)
-        val colorTo = resources.getColor(R.color.white, theme)
+        val colorTo = resources.getColor(com.google.zxing.client.android.R.color.zxing_transparent, theme)
         val colorAnimation =
             ValueAnimator.ofObject(ArgbEvaluator(), colorFrom, colorTo)
         colorAnimation.duration = 250 // milliseconds
@@ -459,24 +468,23 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    // 以下onResume, onPause, onDestroyの３つは
+    // 以下onResume, onPause は
     // アクティビティのライフサイクルとカメラのライフサイクルを合わせるために実装
     ////////////////////////////////////////////////////////////////////////////////////////////////
     override fun onResume() {
         super.onResume()
-        capture.onResume()
+        binding.barcodeView.resume()
     }
 
     override fun onPause() {
         super.onPause()
         // カメラをポーズする前にフラッシュをオフに
         bindingScanner.flashSwitch.isChecked = false
-        capture.onPause()
+        binding.barcodeView.pause()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        capture.onDestroy()
     }
 
 
