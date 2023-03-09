@@ -19,6 +19,9 @@
         android:theme="@style/Theme.ScanToPrintApp"
         tools:targetApi="31">
         <activity
+            android:name=".ScanToPrintActivity"
+            android:exported="false" />
+        <activity
             android:name=".Blp2dPrintActivity"
             android:exported="false" />
         <activity
