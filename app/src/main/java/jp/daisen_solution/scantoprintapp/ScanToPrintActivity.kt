@@ -40,7 +40,7 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
     private lateinit var capture: CaptureManager
     private lateinit var messageTextBG: Drawable
     lateinit var beepManager: BeepManager
-    private var lastScan = Date()
+    private var lastText = ""
 
     private var mBcpControl: BCPControl? = null
     private var mConnectionData: ConnectionData? = ConnectionData()
@@ -68,11 +68,10 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
 
         var callback = BarcodeCallback { result ->
             result?.let {
-                val current = Date()
-                val diff = current.time - lastScan.time
-                if (diff >= 1000) {
+                if (result.text != null && !result.text.equals(lastText)) {
+
+                    lastText = result.text
                     bindingScanner.messageText.text = it.text
-                    lastScan = current
                     beepManager.playBeepSoundAndVibrate()
 
                     animateBackground()

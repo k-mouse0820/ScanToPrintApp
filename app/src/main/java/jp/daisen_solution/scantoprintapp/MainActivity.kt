@@ -17,6 +17,7 @@ import android.widget.ListView
 import android.widget.Toast
 import com.google.zxing.integration.android.IntentIntegrator
 import jp.daisen_solution.scantoprintapp.databinding.ActivityMainBinding
+import kotlinx.coroutines.selects.select
 import kotlin.system.exitProcess
 
 
@@ -71,16 +72,24 @@ class MainActivity : AppCompatActivity() {
             binding.bluetoothListView.selector = PaintDrawable(Color.BLUE)
             binding.bluetoothListView.setItemChecked(selectPosition, true)  // デフォルト行を選択
 
-
+            /*
             /////////////////////////////////////////////////////////////////////////////////////
             // リストのアイテム（BluetoothDevice）を選択した時の処理
             // １．選択したデバイスを記録
             // ２．スキャン画面へ遷移
             /////////////////////////////////////////////////////////////////////////////////////
-            val clickListener = OnItemClickListener { parent, _, position, _ ->
+            val listClickListener = OnItemClickListener { parent, _, position, _ ->
                 val listView = parent as ListView
                 val item = listView.getItemAtPosition(position) as String
+                selectPosition = position
+                binding.bluetoothListView.setItemChecked(selectPosition, true)
+                this.getSharedPreferences(Consts.bcpSectionName, Context.MODE_PRIVATE).edit()
+                    .putString(Consts.pairingNameKey, item).apply()
+            }
+             */
 
+            binding.startButton.setOnClickListener {
+                val item = binding.bluetoothListView.selectedItem as String
                 this.getSharedPreferences(Consts.bcpSectionName, Context.MODE_PRIVATE).edit()
                     .putString(Consts.pairingNameKey, item).apply()
 
@@ -88,10 +97,7 @@ class MainActivity : AppCompatActivity() {
                     // カメラ起動をするActivityを指定
                     captureActivity = ScanToPrintActivity::class.java
                 }.initiateScan()
-
-
             }
-
 
         } catch (th: Throwable) {
         }

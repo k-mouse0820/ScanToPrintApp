@@ -8,6 +8,7 @@
     <string name="qrcodeData">QRCODE</string>
 
     <string name="bluetoothPairingList">Bluetoothペアリング一覧</string>
+    <string name="startButton">開始</string>
 
     <string name="wait">しばらくお待ちください.</string>
     <string name="runPrint">印刷実行中</string>
