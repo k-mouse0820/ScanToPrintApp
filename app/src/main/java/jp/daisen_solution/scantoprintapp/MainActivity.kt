@@ -1,5 +1,6 @@
 package jp.daisen_solution.scantoprintapp
 
+import android.app.AlertDialog
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.content.Context
@@ -9,12 +10,14 @@ import android.graphics.drawable.PaintDrawable
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.KeyEvent
 import android.widget.AdapterView.OnItemClickListener
 import android.widget.ArrayAdapter
 import android.widget.ListView
 import android.widget.Toast
 import com.google.zxing.integration.android.IntentIntegrator
 import jp.daisen_solution.scantoprintapp.databinding.ActivityMainBinding
+import kotlin.system.exitProcess
 
 
 class MainActivity : AppCompatActivity() {
@@ -28,6 +31,9 @@ class MainActivity : AppCompatActivity() {
 
         val con = this.applicationContext
         try {
+            /////////////////////////////////////////////////////////////////////////////////////
+            // ペアリング済みのBluetooth機器一覧を作成
+            /////////////////////////////////////////////////////////////////////////////////////
             val adapter =
                 ArrayAdapter<String>(this, android.R.layout.simple_list_item_single_choice)
             val bluetoothManager =
@@ -66,9 +72,11 @@ class MainActivity : AppCompatActivity() {
             binding.bluetoothListView.setItemChecked(selectPosition, true)  // デフォルト行を選択
 
 
+            /////////////////////////////////////////////////////////////////////////////////////
             // リストのアイテム（BluetoothDevice）を選択した時の処理
             // １．選択したデバイスを記録
             // ２．スキャン画面へ遷移
+            /////////////////////////////////////////////////////////////////////////////////////
             val clickListener = OnItemClickListener { parent, _, position, _ ->
                 val listView = parent as ListView
                 val item = listView.getItemAtPosition(position) as String
@@ -87,11 +95,30 @@ class MainActivity : AppCompatActivity() {
 
         }
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // 「前画面に戻る」ボタン押下時の処理
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
+        if (event!!.action == KeyEvent.ACTION_DOWN) {
+            if (event!!.keyCode == KeyEvent.KEYCODE_BACK) {
+
+                val alertBuilder = AlertDialog.Builder(this)
+                alertBuilder.setMessage(R.string.alert_AppExit)
+                alertBuilder.setCancelable(false)
+                alertBuilder.setPositiveButton(R.string.msg_Ok) { _, _ ->
+                    exitProcess(RESULT_OK) }
+                alertBuilder.setNegativeButton(R.string.msg_No) { _, _ ->
+                    // 何もしない
+                }
+                alertBuilder.show()
+                return true
+            }
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
 }
-
-
-
-
 
 
 /*
