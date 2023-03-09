@@ -13,11 +13,13 @@ import android.os.Environment
 import android.util.Log
 import android.view.KeyEvent
 import android.view.View
+import com.google.zxing.BarcodeFormat
 import com.google.zxing.client.android.BeepManager
 import com.google.zxing.client.android.Intents.Scan
 import com.journeyapps.barcodescanner.BarcodeCallback
 import com.journeyapps.barcodescanner.BarcodeResult
 import com.journeyapps.barcodescanner.CaptureManager
+import com.journeyapps.barcodescanner.DefaultDecoderFactory
 import jp.co.toshibatec.bcp.library.BCPControl
 import jp.co.toshibatec.bcp.library.BCPControl.LIBBcpControlCallBack
 import jp.co.toshibatec.bcp.library.LongRef
@@ -48,6 +50,18 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
     private var mProgressDlg: ProgressDialog? = null
     private var mPrintDialogDelegate: PrintDialogDelegate? = null
 
+    private var callback = BarcodeCallback { result ->
+        result?.let {
+            if (result.text != null && !result.text.equals(lastText)) {
+                // 重複スキャンはしない
+                lastText = result.text
+                bindingScanner.messageText.text = it.text
+                beepManager.playBeepSoundAndVibrate()
+                animateBackground()
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityScanToPrintBinding.inflate(layoutInflater)
@@ -56,28 +70,14 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
         /////////////////////////////////////////////////////////////////////////////////////
         // １．スキャナー起動
         /////////////////////////////////////////////////////////////////////////////////////
-        // CaptureManager使用してカメラ画面の起動を行う
-        capture = CaptureManager(this, binding.barcodeView).apply {
-            initializeFromIntent(intent, savedInstanceState)
-        }
+        binding.barcodeView.barcodeView.decoderFactory = DefaultDecoderFactory()
+        binding.barcodeView.initializeFromIntent(intent)
+        binding.barcodeView.decodeContinuous(callback)
 
         beepManager = BeepManager(this)
         beepManager.isVibrateEnabled = true
 
         messageTextBG = bindingScanner.messageText.background
-
-        var callback = BarcodeCallback { result ->
-            result?.let {
-                if (result.text != null && !result.text.equals(lastText)) {
-
-                    lastText = result.text
-                    bindingScanner.messageText.text = it.text
-                    beepManager.playBeepSoundAndVibrate()
-
-                    animateBackground()
-                }
-            }
-        }
 
         // フラッシュのON/OFFをするListenerの設定
         bindingScanner.flashSwitch.setOnCheckedChangeListener { _, isChecked ->
@@ -255,6 +255,9 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
         } else {
             mProgressDlg!!.setMessage(this.getString(R.string.msg_success))
             bindingScanner.printButton.isEnabled = true
+            val item = intent.getStringExtra(Consts.bluetoothDeviceExtra)
+            this.getSharedPreferences(Consts.bcpSectionName, Context.MODE_PRIVATE).edit()
+                .putString(Consts.pairingNameKey, item).apply()
             Log.i("openPort","ポートオープン処理：成功")
         }
 

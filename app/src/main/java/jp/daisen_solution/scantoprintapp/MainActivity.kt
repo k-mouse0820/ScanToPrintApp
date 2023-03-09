@@ -90,13 +90,8 @@ class MainActivity : AppCompatActivity() {
 
             binding.startButton.setOnClickListener {
                 val item = binding.bluetoothListView.selectedItem as String
-                this.getSharedPreferences(Consts.bcpSectionName, Context.MODE_PRIVATE).edit()
-                    .putString(Consts.pairingNameKey, item).apply()
-
-                IntentIntegrator(this).apply {
-                    // カメラ起動をするActivityを指定
-                    captureActivity = ScanToPrintActivity::class.java
-                }.initiateScan()
+                val intent = Intent(this, ScanToPrintActivity::class.java)
+                intent.putExtra(Consts.bluetoothDeviceExtra, item )
             }
 
         } catch (th: Throwable) {

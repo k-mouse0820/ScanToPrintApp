@@ -10,6 +10,8 @@ object Consts {
     const val bcpSectionName = "bcpCommonData"
     const val pairingNameKey = "BluetoothPairName"
 
+    const val bluetoothDeviceExtra = "BLUETOOTH_DEVICE"
+
 
 
 }
