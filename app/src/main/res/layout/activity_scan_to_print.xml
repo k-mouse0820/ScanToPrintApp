@@ -15,7 +15,27 @@
         android:id = "@+id/barcodeView"
         app:zxing_scanner_layout="@layout/custom_qr_code_scanner"/>
 
-    <!-- メッセージ/スキャン結果 -->
+    <!-- プログレスバー -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/progressText"
+        android:text="progressText"
+        android:textColor="@android:color/white"
+        android:background="@color/zxing_transparent"
+        app:layout_constraintTop_toBottomOf="@id/progressBar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"/>
+
+    <!-- メッセージ -->
     <TextView
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -25,9 +45,24 @@
         android:textAlignment="center"
         android:textColor="@android:color/white"
         android:background="@color/zxing_transparent"
-        app:layout_constraintBottom_toTopOf="@id/printButton"
+        app:layout_constraintBottom_toTopOf="@id/messageText"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- スキャン結果 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/scanText"
+        android:text="scanText"
+        android:textColor="@android:color/white"
+        android:background="@color/zxing_transparent"
+        app:layout_constraintTop_toBottomOf="@id/messageText"
+        app:layout_constraintBottom_toTopOf="@id/printButton"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"/>
 
     <!-- 印刷ボタン -->
     <Button

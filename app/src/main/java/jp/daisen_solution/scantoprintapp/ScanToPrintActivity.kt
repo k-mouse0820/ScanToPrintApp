@@ -14,6 +14,7 @@ import android.os.Environment
 import android.util.Log
 import android.view.KeyEvent
 import android.view.View
+import android.widget.Button
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.client.android.BeepManager
 import com.google.zxing.client.android.Intents.Scan
@@ -160,8 +161,11 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
         /////////////////////////////////////////////////////////////////////////////////////
         // ３．通信ポートのオープン　（非同期処理）
         /////////////////////////////////////////////////////////////////////////////////////
+        var mOpenPortTask = OpenPortTask(this,mBcpControl, mConnectionData, binding.printButton)
+
         if (!mConnectionData!!.isOpen.get()) {
             CoroutineScope(Dispatchers.Main).launch {
+//                mOpenPortTask.openBluetoothPort()
                 openBluetoothPort()
             }
         } else {
@@ -290,9 +294,9 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
         var continueFlag: Boolean = true
 
         // Load lfm file
-        Log.i("", "--------loadLfmFile start")
+        Log.i("printExecute", "--------loadLfmFile start")
         var result = LongRef(0)
-        Log.v("",mPrintData!!.lfmFileFullPath)
+        Log.v("printExecute",mPrintData!!.lfmFileFullPath)
         if (!mBcpControl!!.LoadLfmFile(mPrintData!!.lfmFileFullPath, result)) {
             Log.v("printExecute",String.format("loadLfmFile Error = %08x %s", result.longValue, mPrintData!!.lfmFileFullPath))
             this.showDialog(PrintDialogDelegate.Companion.ERRORMESSAGE_DIALOG)  // 3= ERROR
