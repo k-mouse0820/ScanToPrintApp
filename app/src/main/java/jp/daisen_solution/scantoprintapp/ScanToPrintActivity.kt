@@ -29,6 +29,7 @@ import jp.co.toshibatec.bcp.library.StringRef
 import jp.daisen_solution.scantoprintapp.databinding.ActivityScanToPrintBinding
 import jp.daisen_solution.scantoprintapp.databinding.CustomQrCodeScannerBinding
 
+
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -43,12 +44,11 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
     private lateinit var bindingScanner: CustomQrCodeScannerBinding
 
     private lateinit var context: Context
+    private lateinit var mActivity: Activity
 
     private lateinit var messageTextBG: Drawable
     lateinit var beepManager: BeepManager
     private var lastText = ""
-
-
 
     private var mBcpControl: BCPControl? = null
     private var mConnectionData: ConnectionData? = ConnectionData()
@@ -65,8 +65,11 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
         setContentView(binding.root)
 
         context = this.applicationContext
+        mActivity = this
         binding.progressText.text = ""
+        binding.messageText.text = ""
         binding.scanText.text = ""
+        binding.printButton.text = ""
 
         /////////////////////////////////////////////////////////////////////////////////////
         // １．スキャナー起動
@@ -79,6 +82,9 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
                     // 重複スキャンはしない
                     lastText = it.text
                     binding.scanText.text = it.text
+                    binding.printButton.isEnabled = true
+                    binding.printButton.text = getString(R.string.printButton)
+
                     beepManager.playBeepSoundAndVibrate()
                     animateBackground()
                 }
@@ -172,7 +178,6 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
         /////////////////////////////////////////////////////////////////////////////////////
         var mOpenPortTask = OpenPortTask(this,mBcpControl, mConnectionData)
 
-
         binding.progressBar.visibility = View.VISIBLE
         binding.progressText.text = getString(R.string.msg_connectingPrinter)
 
@@ -182,10 +187,7 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
                 binding.progressBar.visibility = View.INVISIBLE
                 if (resultMessage.equals(getString(R.string.msg_success))) {
                     binding.progressText.text = ""
-                    //if (binding.scanText.text.toString() != "") {
-                        binding.printButton.isEnabled = true
-                    //
-                // }
+                    binding.messageText.text = getString(R.string.msg_readQR)
                 } else {
                     util.showAlertDialog(context, resultMessage)
                 }
@@ -243,151 +245,27 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
             mPrintData!!.lfmFileFullPath = filePathName
 
             // 印刷実行スレッドの起動
+            var mPrintExecuteTask = PrintExecuteTask(this,mBcpControl, mPrintData)
+            binding.progressBar.visibility = View.VISIBLE
+            binding.progressText.text = getString(R.string.msg_executingPrint)
+
             CoroutineScope(Dispatchers.Main).launch {
-                printExecute()
-            }
-        }
-    }
-
-/*
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // プリンタのBluetoothポートをオープンするメソッド
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    private suspend fun openBluetoothPort() {
-
-        // プログレスダイアログの表示
-        mProgressDlg = ProgressDialog(this)
-        mProgressDlg!!.setTitle(R.string.connectionProcess)
-        mProgressDlg!!.setMessage(this.getString(R.string.wait))
-        mProgressDlg!!.setProgressStyle(ProgressDialog.STYLE_SPINNER)
-        mProgressDlg!!.setCancelable(true)
-        mProgressDlg!!.show()
-
-        // プリンタのBluetoothポートをオープン
-        mBcpControl!!.portSetting = mConnectionData!!.portSetting
-        val result = LongRef(0)
-        Log.v("openPort", "ポートオープン処理：開始")
-        val resultOpen = mBcpControl!!.OpenPort(mConnectionData!!.issueMode, result)
-        Log.v("openPort", "result : ${result.longValue}")
-        mConnectionData!!.isOpen = AtomicBoolean(resultOpen)
-
-        if (!resultOpen) {
-            val message = StringRef("")
-            if (!mBcpControl!!.GetMessage(result.longValue, message)) {
-                mProgressDlg!!.setMessage(this.getString(R.string.msg_OpenPorterror))
-                Log.e("openPort",getString(R.string.msg_OpenPorterror))
-                binding.printButton.isEnabled = false
-                return
-            } else {
-                mProgressDlg!!.setMessage(message.getStringValue())
-                Log.e("openPort", message.getStringValue())
-                binding.printButton.isEnabled = false
-                return
-            }
-        } else {
-            mProgressDlg!!.setMessage(this.getString(R.string.msg_success))
-            binding.printButton.isEnabled = true
-            this.getSharedPreferences(Consts.bcpSectionName, Context.MODE_PRIVATE).edit()
-                .putString(Consts.pairingNameKey, bluetoothDeviceExtra).apply()
-            Log.i("openPort","ポートオープン処理：成功")
-        }
-
-        // プログレスダイアログを消す
-        mProgressDlg!!.dismiss()
-    }
- */
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // 印刷処理　（非同期）
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    private suspend fun printExecute() {
-
-        // プログレスダイアログの表示
-        mProgressDlg = ProgressDialog(this)
-        mProgressDlg!!.setTitle(R.string.runPrint)
-        mProgressDlg!!.setMessage(this.getString(R.string.wait))
-        mProgressDlg!!.setProgressStyle(ProgressDialog.STYLE_SPINNER)
-        mProgressDlg!!.setCancelable(true)
-        mProgressDlg!!.show()
-
-        Log.i("printExecute","印刷処理：開始")
-        mPrintData!!.result = 0
-        mPrintData!!.statusMessage = ""
-
-        var continueFlag: Boolean = true
-
-        // Load lfm file
-        Log.i("printExecute", "--------loadLfmFile start")
-        var result = LongRef(0)
-        Log.v("printExecute",mPrintData!!.lfmFileFullPath)
-        if (!mBcpControl!!.LoadLfmFile(mPrintData!!.lfmFileFullPath, result)) {
-            Log.v("printExecute",String.format("loadLfmFile Error = %08x %s", result.longValue, mPrintData!!.lfmFileFullPath))
-            this.showDialog(PrintDialogDelegate.Companion.ERRORMESSAGE_DIALOG)  // 3= ERROR
-            continueFlag = false
-        }
-
-        if (continueFlag) {
-            // set object
-            Log.i("printExecute", "--------setObjectDataEX start")
-            // 全てのキー値を取得
-            val keySet: Set<*> = mPrintData!!.objectDataList!!.keys
-            val keyIte = keySet.iterator()
-            // ループ。反復子iteratorによるキー取得
-            while (keyIte.hasNext()) {
-                val key = keyIte.next() as String
-                if (!mBcpControl!!.SetObjectDataEx(key, mPrintData!!.objectDataList!![key], result)
-                ) {
-                    Log.v("printExecute",String.format("setObjectDataEX Error = %08x", result.longValue))
-                    continueFlag = false
-                }
-            }
-        }
-
-        var printResult = ""
-        if (continueFlag) {
-            // print
-            val printerStatus = StringRef("")
-            val cutInterval = 10 // 10msec
-            Log.i("printExecute", "--------issue start")
-            if (!mBcpControl!!.Issue(mPrintData!!.printCount, cutInterval, printerStatus, result)) {
-                mPrintData!!.result = result.longValue
-                val message = StringRef("")
-                if (result.longValue == 0x800A044EL) {     // プリンタからステータスを受信
-                    val errCode = printerStatus.getStringValue().substring(0, 2)
-                    mBcpControl!!.GetMessage(errCode, message)
-                } else {
-                    if (!mBcpControl!!.GetMessage(result.longValue, message)) {
-                        message.setStringValue(String.format("executePrint Error = %08x", result.longValue))
+                var resultMessage = mPrintExecuteTask.print()
+                binding.progressBar.visibility = View.INVISIBLE
+                binding.progressText.text = ""
+                when (resultMessage) {
+                    getString(R.string.msg_success) -> {
+                        mActivity.showDialog(PrintDialogDelegate.Companion.PRINT_COMPLETEMESSAGE_DIALOG)
+                        binding.scanText.text = ""
+                    }
+                    getString(R.string.msg_RetryError) -> {
+                        mActivity.showDialog(PrintDialogDelegate.Companion.RETRYERRORMESSAGE_DIALOG)
+                    }
+                    else -> {
+                        mActivity.showDialog(PrintDialogDelegate.Companion.ERRORMESSAGE_DIALOG)
                     }
                 }
-                mPrintData!!.statusMessage = message.getStringValue()
-
-                // リトライ可能エラー有無の確認
-                if (mBcpControl!!.IsIssueRetryError()) {
-                    printResult = getString(R.string.msg_RetryError)
-                } else {
-                    printResult = getString(R.string.error)
-                }
-            } else {
-                mPrintData!!.result = result.longValue
-                mPrintData!!.statusMessage = getString(R.string.msg_success)
-                printResult = getString(R.string.msg_success)
             }
-        }
-
-        mProgressDlg!!.dismiss()
-        when (printResult) {
-            getString(R.string.msg_success) -> {
-                this.showDialog(PrintDialogDelegate.Companion.PRINT_COMPLETEMESSAGE_DIALOG)
-            }
-            getString(R.string.msg_RetryError) -> {
-                this.showDialog(PrintDialogDelegate.Companion.RETRYERRORMESSAGE_DIALOG)
-            }
-            else -> {
-                this.showDialog(PrintDialogDelegate.Companion.ERRORMESSAGE_DIALOG)
-            }
-        }
-        if (binding.messageText.text.toString() != "" && binding.messageText.text.toString().length != 0 ) {
-            binding.printButton.isEnabled = true
         }
     }
 
@@ -490,7 +368,6 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
         colorAnimation.addUpdateListener { animator -> binding.messageText.setBackgroundColor(animator.animatedValue as Int)}
         colorAnimation.start()
     }
-
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // 以下onResume, onPause は

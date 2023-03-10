@@ -9,11 +9,16 @@
 
     <string name="bluetoothPairingList">Bluetoothペアリング一覧</string>
     <string name="startButton">開始</string>
+    <string name="printButton">印刷</string>
 
     <string name="msg_connectingPrinter">プリンタに接続しています...</string>
+    <string name="msg_executingPrint">印刷しています...</string>
+    <string name="msg_readQR">QRコードを読み取ってください</string>
+
+
+
 
     <string name="wait">しばらくお待ちください.</string>
-    <string name="runPrint">印刷実行中</string>
     <string name="endPrint">印刷終了</string>
     <string name="error">エラー</string>
     <string name="processComplete">処理完了</string>

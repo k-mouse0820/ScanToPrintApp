@@ -12,9 +12,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class OpenPortTask(context: Activity?, bcpControl: BCPControl?, connectionData: ConnectionData?) {
 
-    private var mContext: Activity? = context
-    private var mBcpControl: BCPControl? = bcpControl
-    private var mConnectionData: ConnectionData? = connectionData
+    private var mContext = context
+    private var mBcpControl = bcpControl
+    private var mConnectionData = connectionData
     private var bluetoothDeviceExtra: String = ""
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
