@@ -26,9 +26,9 @@ import jp.co.toshibatec.bcp.library.BCPControl
 import jp.co.toshibatec.bcp.library.BCPControl.LIBBcpControlCallBack
 import jp.co.toshibatec.bcp.library.LongRef
 import jp.co.toshibatec.bcp.library.StringRef
-import jp.daisen_solution.scantoprintapp.databinding.ActivityCustomScannerBinding
 import jp.daisen_solution.scantoprintapp.databinding.ActivityScanToPrintBinding
 import jp.daisen_solution.scantoprintapp.databinding.CustomQrCodeScannerBinding
+
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -42,20 +42,13 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
     private lateinit var binding: ActivityScanToPrintBinding
     private lateinit var bindingScanner: CustomQrCodeScannerBinding
 
+    private lateinit var context: Context
+
     private lateinit var messageTextBG: Drawable
     lateinit var beepManager: BeepManager
     private var lastText = ""
-    private var callback = BarcodeCallback { result ->
-        result?.let {
-            if (result.text != null && !result.text.equals(lastText)) {
-                // 重複スキャンはしない
-                lastText = it.text
-                binding.messageText.text = it.text
-                beepManager.playBeepSoundAndVibrate()
-                animateBackground()
-            }
-        }
-    }
+
+
 
     private var mBcpControl: BCPControl? = null
     private var mConnectionData: ConnectionData? = ConnectionData()
@@ -71,11 +64,27 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
         bindingScanner = CustomQrCodeScannerBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-
+        context = this.applicationContext
+        binding.progressText.text = ""
+        binding.scanText.text = ""
 
         /////////////////////////////////////////////////////////////////////////////////////
         // １．スキャナー起動
         /////////////////////////////////////////////////////////////////////////////////////
+
+        // QRコードスキャン時の処理（コールバック）
+        var callback = BarcodeCallback { result ->
+            result?.let {
+                if (result.text != null && !result.text.equals(lastText)) {
+                    // 重複スキャンはしない
+                    lastText = it.text
+                    binding.scanText.text = it.text
+                    beepManager.playBeepSoundAndVibrate()
+                    animateBackground()
+                }
+            }
+        }
+
         binding.barcodeView.barcodeView.decoderFactory = DefaultDecoderFactory()
         binding.barcodeView.initializeFromIntent(intent)
         binding.barcodeView.decodeContinuous(callback)
@@ -161,12 +170,25 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
         /////////////////////////////////////////////////////////////////////////////////////
         // ３．通信ポートのオープン　（非同期処理）
         /////////////////////////////////////////////////////////////////////////////////////
-        var mOpenPortTask = OpenPortTask(this,mBcpControl, mConnectionData, binding.printButton)
+        var mOpenPortTask = OpenPortTask(this,mBcpControl, mConnectionData)
+
+
+        binding.progressBar.visibility = View.VISIBLE
+        binding.progressText.text = getString(R.string.msg_connectingPrinter)
 
         if (!mConnectionData!!.isOpen.get()) {
             CoroutineScope(Dispatchers.Main).launch {
-//                mOpenPortTask.openBluetoothPort()
-                openBluetoothPort()
+                var resultMessage = mOpenPortTask.openBluetoothPort()
+                binding.progressBar.visibility = View.INVISIBLE
+                if (resultMessage.equals(getString(R.string.msg_success))) {
+                    binding.progressText.text = ""
+                    //if (binding.scanText.text.toString() != "") {
+                        binding.printButton.isEnabled = true
+                    //
+                // }
+                } else {
+                    util.showAlertDialog(context, resultMessage)
+                }
             }
         } else {
             Log.v("openPort", "Already opened - skip")
@@ -185,7 +207,7 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
             val printItemList = HashMap<String?, String?>()
 
             // 品番データ（8桁）
-            val hinban = binding.messageText.text.toString()
+            val hinban = binding.scanText.text.toString()
             if (hinban.length > 8) {
                 printItemList[getString(R.string.hinbanData)] = hinban.substring(0,7)
             } else {
@@ -227,7 +249,7 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
         }
     }
 
-
+/*
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // プリンタのBluetoothポートをオープンするメソッド
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -273,7 +295,7 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
         // プログレスダイアログを消す
         mProgressDlg!!.dismiss()
     }
-
+ */
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // 印刷処理　（非同期）
     ////////////////////////////////////////////////////////////////////////////////////////////////
