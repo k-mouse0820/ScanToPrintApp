@@ -7,6 +7,9 @@
     <string name="siiresakiData">仕入先データ</string>
     <string name="qrcodeData">QRCODE</string>
 
+    <string name="turn_off_switchlight">OFF</string>
+    <string name="turn_on_switchlight">ON</string>
+
     <string name="bluetoothPairingList">Bluetoothペアリング一覧</string>
     <string name="startButton">開始</string>
     <string name="printButton">印刷</string>

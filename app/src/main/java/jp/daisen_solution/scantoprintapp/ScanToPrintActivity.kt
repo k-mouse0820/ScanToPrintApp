@@ -14,13 +14,8 @@ import android.os.Environment
 import android.util.Log
 import android.view.KeyEvent
 import android.view.View
-import android.widget.Button
-import com.google.zxing.BarcodeFormat
 import com.google.zxing.client.android.BeepManager
-import com.google.zxing.client.android.Intents.Scan
 import com.journeyapps.barcodescanner.BarcodeCallback
-import com.journeyapps.barcodescanner.BarcodeResult
-import com.journeyapps.barcodescanner.CaptureManager
 import com.journeyapps.barcodescanner.DefaultDecoderFactory
 import jp.co.toshibatec.bcp.library.BCPControl
 import jp.co.toshibatec.bcp.library.BCPControl.LIBBcpControlCallBack
@@ -53,7 +48,6 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
     private var mBcpControl: BCPControl? = null
     private var mConnectionData: ConnectionData? = ConnectionData()
     private var mPrintData: PrintData? = PrintData()
-    private var mProgressDlg: ProgressDialog? = null
     private var mPrintDialogDelegate: PrintDialogDelegate? = null
 
     private var bluetoothDeviceExtra: String = ""
@@ -188,6 +182,7 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
                 if (resultMessage.equals(getString(R.string.msg_success))) {
                     binding.progressText.text = ""
                     binding.messageText.text = getString(R.string.msg_readQR)
+                    Log.i("openPort","isOpen = " + mConnectionData!!.isOpen.toString())
                 } else {
                     util.showAlertDialog(context, resultMessage)
                 }
@@ -255,7 +250,7 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
                 binding.progressText.text = ""
                 when (resultMessage) {
                     getString(R.string.msg_success) -> {
-                        mActivity.showDialog(PrintDialogDelegate.Companion.PRINT_COMPLETEMESSAGE_DIALOG)
+                        // mActivity.showDialog(PrintDialogDelegate.Companion.PRINT_COMPLETEMESSAGE_DIALOG)
                         binding.scanText.text = ""
                     }
                     getString(R.string.msg_RetryError) -> {
@@ -273,20 +268,25 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
     // プリンタのBluetoothポートをクローズするメソッド
     ////////////////////////////////////////////////////////////////////////////////////////////////
     private fun closeBluetoothPort() {
-        if (mConnectionData!!.isOpen == AtomicBoolean(true)) {
+        Log.i("closePort","close port start")
+        if (mConnectionData!!.isOpen.get()) {
+            Log.i("closePort","close port start2")
             val Result = LongRef(0)
             if (! mBcpControl!!.ClosePort(Result)) {
                 val Message = StringRef("")
                 if (! mBcpControl!!.GetMessage(Result.longValue, Message)) {
+                    Log.e("closePort",String.format(R.string.msg_PortCloseErrorcode.toString() + "= %08x", Result.longValue))
                     util.showAlertDialog(
                         this,
                         String.format(R.string.msg_PortCloseErrorcode.toString() + "= %08x", Result.longValue)
                     )
                 } else {
+                    Log.e("closePort",Message.getStringValue())
                     util.showAlertDialog(this, Message.getStringValue())
                 }
             } else {
-                util.showAlertDialog(this, this.getString(R.string.msg_PortCloseSuccess))
+                Log.i("closePort",this.getString(R.string.msg_PortCloseSuccess))
+                //util.showAlertDialog(this, this.getString(R.string.msg_PortCloseSuccess))
                 mConnectionData!!.isOpen = AtomicBoolean(false)
             }
         }
@@ -309,7 +309,7 @@ class ScanToPrintActivity : AppCompatActivity(), LIBBcpControlCallBack {
         alertBuilder.setMessage(R.string.confirmBack)
         alertBuilder.setCancelable(false)
         alertBuilder.setPositiveButton(R.string.msg_Ok) { _, _ ->
-            closeBluetoothPort()
+            this.closeBluetoothPort()
             mBcpControl = null
             mConnectionData = null
             mPrintData = null

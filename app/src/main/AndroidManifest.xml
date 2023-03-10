@@ -23,9 +23,6 @@
             android:name=".ScanToPrintActivity"
             android:exported="false" />
         <activity
-            android:name=".Blp2dPrintActivity"
-            android:exported="false" />
-        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
@@ -34,9 +31,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".CustomScannerActivity"
-            android:screenOrientation="portrait" />
     </application>
 
 </manifest>
